@@ -1,11 +1,37 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"os"
 )
 
 func main() {
 
-	fmt.Println("Yo, analyzer!")
+	if len(os.Args) < 2 {
+		fmt.Fprintln(os.Stderr, "Ошибка: Не указано имя текстового файла")
+		os.Exit(1)
+	}
+
+	filePath := os.Args
+
+	file, err := os.Open(filePath[1])
+
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Ошибка открытия файла: %v", err)
+		os.Exit(1)
+	}
+
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		fmt.Println(scanner.Text())
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Printf("Ошибка при сканировании: %v\n", err)
+	}
+
+	fmt.Print("Done!")
 
 }

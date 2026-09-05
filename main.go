@@ -50,6 +50,30 @@ func main() {
 		fmt.Printf("Ошибка при сканировании: %v\n", err)
 		os.Exit(1)
 	}
+
+	pattern := `[,;:.!?*#]+`
+	re := regexp.MustCompile(pattern)
+
+	regText := re.Split(text, -1)
+	var words []string
+
+	for _, t := range regText {
+		if t != "" {
+
+			words = append(words, strings.Fields(t)...)
+		}
+	}
+
+	for _, w := range words {
+
+		if idx, ok := wordMap[w]; ok {
+			wordList[idx].repets++
+		} else {
+			newIdx := len(wordList)
+			wordMap[w] = newIdx
+			wordList = append(wordList, Word{word: w, length: utf8.RuneCountInString(w), repets: 1})
+		}
+	}
 func countSymbols(text string) int {
 	return utf8.RuneCountInString(text)
 }

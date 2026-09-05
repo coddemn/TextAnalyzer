@@ -33,6 +33,12 @@ func main() {
 		os.Exit(1)
 	}
 
+	defer func() {
+		if err := file.Close(); err != nil {
+			fmt.Printf("Ошибка закрытия файла: %v\n", err)
+		}
+	}()
+
 	wordList := make([]Word, 0)
 	wordMap := make(map[string]int)
 

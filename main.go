@@ -50,6 +50,9 @@ func main() {
 		fmt.Printf("Ошибка при сканировании: %v\n", err)
 		os.Exit(1)
 	}
+func countSymbols(text string) int {
+	return utf8.RuneCountInString(text)
+}
 func printWordList(wordList []Word) {
 
 	strQty := ""
@@ -63,5 +66,48 @@ func printWordList(wordList []Word) {
 
 		fmt.Printf("%d. \"%s\" — %d %s\n", i+1, w.word, w.repets, strQty)
 	}
+}
+
+func avgWordLen(wordList []Word) int {
+
+	sum := 0
+	countWords := 0
+
+	for _, w := range wordList {
+
+		sum += w.length * w.repets
+		countWords += w.repets
+	}
+	return int(math.Ceil(float64(sum) / float64(countWords)))
+}
+
+func longestWord(wordList []Word) Word {
+	sort.Slice(wordList, func(i, j int) bool {
+		return wordList[i].length > wordList[j].length
+	})
+
+	return wordList[0]
+}
+
+func frequentsWord(wordList []Word, qty int) []Word {
+	sort.Slice(wordList, func(i, j int) bool {
+		return wordList[i].repets > wordList[j].repets
+	})
+
+	var topWords []Word
+
+	for i := 0; i < qty; i++ {
+		topWords = append(topWords, wordList[i])
+	}
+
+	return topWords
+}
+
+func sumRepets(wordList []Word) int {
+	var total int
+	for _, w := range wordList {
+		total += w.repets
+	}
+	return total
 }
 }

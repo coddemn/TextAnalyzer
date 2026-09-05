@@ -55,6 +55,11 @@ func main() {
 	re := regexp.MustCompile(pattern)
 
 	regText := re.Split(text, -1)
+
+	patternSugg := `[.!?]+`
+	reSugg := regexp.MustCompile(patternSugg)
+	textSugg := reSugg.Split(text, -1)
+
 	var words []string
 
 	for _, t := range regText {
@@ -78,6 +83,7 @@ func main() {
 	fmt.Printf("Статистика текста (%s):\n", file.Name())
 	fmt.Printf("Символов: %d\n", countSymbols(text))
 	fmt.Printf("Строк: %d\n", lineCount)
+	fmt.Printf("Предложений: %d\n", countSuggest(textSugg))
 	fmt.Printf("Слов: %d\n", sumRepets(wordList))
 	fmt.Printf("Средняя длина слова: %v символов\n", avgWordLen(wordList))
 
@@ -151,4 +157,15 @@ func sumRepets(wordList []Word) int {
 	}
 	return total
 }
+
+func countSuggest(text []string) int {
+	count := 0
+
+	for _, t := range text {
+		if t != "" {
+			count++
+		}
+	}
+
+	return count
 }

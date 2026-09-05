@@ -33,16 +33,21 @@ func main() {
 		os.Exit(1)
 	}
 
-	defer file.Close()
+	wordList := make([]Word, 0)
+	wordMap := make(map[string]int)
 
 	scanner := bufio.NewScanner(file)
+	scanner.Split(bufio.ScanLines)
+	text := ""
+	lineCount := 0
+
 	for scanner.Scan() {
-		fmt.Println(scanner.Text())
+		lineCount++
+		text += scanner.Text()
 	}
+
 	if err := scanner.Err(); err != nil {
 		fmt.Printf("Ошибка при сканировании: %v\n", err)
+		os.Exit(1)
 	}
-
-	fmt.Print("Done!")
-
 }

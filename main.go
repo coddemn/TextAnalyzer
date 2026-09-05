@@ -50,4 +50,18 @@ func main() {
 		fmt.Printf("Ошибка при сканировании: %v\n", err)
 		os.Exit(1)
 	}
+func printWordList(wordList []Word) {
+
+	strQty := ""
+
+	for i, w := range wordList {
+		if w.repets%10 == 2 || w.repets%10 == 3 || w.repets%10 == 4 {
+			strQty = "раза"
+		} else {
+			strQty = "раз"
+		}
+
+		fmt.Printf("%d. \"%s\" — %d %s\n", i+1, w.word, w.repets, strQty)
+	}
+}
 }

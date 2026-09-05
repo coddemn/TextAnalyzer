@@ -3,8 +3,19 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"math"
 	"os"
+	"regexp"
+	"sort"
+	"strings"
+	"unicode/utf8"
 )
+
+type Word struct {
+	word   string
+	length int
+	repets int
+}
 
 func main() {
 

@@ -74,9 +74,26 @@ func main() {
 			wordList = append(wordList, Word{word: w, length: utf8.RuneCountInString(w), repets: 1})
 		}
 	}
+
+	fmt.Printf("Статистика текста (%s):\n", file.Name())
+	fmt.Printf("Символов: %d\n", countSymbols(text))
+	fmt.Printf("Строк: %d\n", lineCount)
+	fmt.Printf("Слов: %d\n", sumRepets(wordList))
+	fmt.Printf("Средняя длина слова: %v символов\n", avgWordLen(wordList))
+
+	lw := longestWord(wordList)
+	fmt.Printf("Самое длинное слово: \"%s\" (%d символов)\n", lw.word, lw.length)
+
+	fmt.Println("\nТоп-5 самых частых слов: ")
+	printWordList(frequentsWord(wordList, 5))
+
+	fmt.Printf("\nDone!\n")
+}
+
 func countSymbols(text string) int {
 	return utf8.RuneCountInString(text)
 }
+
 func printWordList(wordList []Word) {
 
 	strQty := ""

@@ -39,6 +39,7 @@ func main() {
 	// config
 	workerCount := 4
 	topN := 5
+	maxFiles := 10
 	maxRetries := 3
 	retryDelay := 100 * time.Millisecond
 	httpAddr := ":8080"
@@ -132,13 +133,17 @@ func main() {
 
 	// }
 
-	gin.SetMode(gin.ReleaseMode)
-	router := gin.New()
-	router.Use(gin.Recovery())
+	//gin.SetMode(gin.ReleaseMode)
+	router := gin.Default()
+	//router.Use(gin.Recovery())
 
-	handler := api.NewHandler(jobs, topN)
+	handler := api.NewHandler(jobs, topN, maxFiles)
 	router.POST("/analyze", handler.AnalyzeFile)
+	router.POST("/analyze/upload", handler.AnalyzeUploadFile)
+	router.POST("/analyze/multiple", handler.AnalyzeMultipleFiles)
+
 	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "It`s API from Gin, Demidos!",

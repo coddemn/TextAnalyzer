@@ -9,6 +9,7 @@ import (
 	"os/signal"
 	"sync"
 	"syscall"
+	"time"
 
 	"github.com/coddemn/TextAnalyzer/internal/domain"
 	"github.com/coddemn/TextAnalyzer/internal/service/analyzer"
@@ -29,19 +30,25 @@ func main() {
 		"../ex2.txt",
 	}
 
+	// config
 	workerCount := 4
 	topN := 5
+	maxRetries := 3
+	retryDelay := 100 * time.Millisecond
 
+	// initialyze
+	r := reader.NewFileReader(maxRetries, retryDelay)
+	a := analyzer.New()
+
+	// channels
 	jobs := make(chan string, len(files))
 	results := make(chan domain.AnalysisResult, len(files))
 
+	// worker pool
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var wg sync.WaitGroup
-
-	r := reader.NewFileReader()
-	a := analyzer.New()
 
 	for w := 0; w < workerCount; w++ {
 		wg.Add(1)
@@ -54,7 +61,7 @@ func main() {
 				default:
 				}
 
-				readRes := r.ReadWithStats(filePath)
+				readRes := r.ReadWithRetry(filePath)
 				var res domain.AnalysisResult
 				res.FilePath = filePath
 				if readRes.Err != nil {

@@ -2,9 +2,12 @@ package reader
 
 import (
 	"bufio"
+	"fmt"
 	"log"
+	"math"
 	"os"
 	"strings"
+	"time"
 )
 
 type FileReadResult struct {
@@ -14,10 +17,36 @@ type FileReadResult struct {
 }
 
 type FileReader struct {
+	maxRetries int
+	baseDelay  time.Duration
 }
 
-func NewFileReader() *FileReader {
-	return &FileReader{}
+func NewFileReader(maxRetries int, baseDelay time.Duration) *FileReader {
+	return &FileReader{
+		maxRetries: maxRetries,
+		baseDelay:  baseDelay,
+	}
+}
+
+func (r *FileReader) ReadWithRetry(path string) FileReadResult {
+	var lastErr error
+
+	for attempt := 0; attempt <= r.maxRetries; attempt++ {
+		readRes := r.ReadWithStats(path)
+		if readRes.Err == nil {
+
+			return readRes
+		}
+
+		lastErr = readRes.Err
+
+		if attempt < r.maxRetries {
+			delay := r.calcDelay(attempt)
+			time.Sleep(delay)
+		}
+	}
+
+	return FileReadResult{Err: fmt.Errorf("read %q after %d retries: %w", path, r.maxRetries, lastErr)}
 }
 
 func (r *FileReader) ReadWithStats(path string) FileReadResult {
@@ -25,7 +54,7 @@ func (r *FileReader) ReadWithStats(path string) FileReadResult {
 	file, err := os.Open(path)
 
 	if err != nil {
-		log.Fatalf("Error opening file: %v", err)
+		log.Printf("Error opening file: %v\n", err)
 		return FileReadResult{Err: err}
 	}
 
@@ -51,4 +80,9 @@ func (r *FileReader) ReadWithStats(path string) FileReadResult {
 		Text:      sb.String(),
 		LineCount: lines,
 	}
+}
+
+func (r *FileReader) calcDelay(attempt int) time.Duration {
+	delay := float64(r.baseDelay) * math.Pow(2, float64(attempt))
+	return time.Duration(delay)
 }

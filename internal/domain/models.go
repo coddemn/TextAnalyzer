@@ -15,4 +15,5 @@ type AnalysisResult struct {
 	AvgWordLength float64 `json:"avg-word-len"`
 	LongestWord   Word    `json:"longest-word"`
 	TopFrequents  []*Word `json:"top-frequents"`
+	Err           error   `json:"err"`
 }

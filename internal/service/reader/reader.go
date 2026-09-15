@@ -8,6 +8,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/coddemn/TextAnalyzer/internal/metrics"
 )
 
 type FileReadResult struct {
@@ -34,11 +36,14 @@ func (r *FileReader) ReadWithRetry(path string) FileReadResult {
 	for attempt := 0; attempt <= r.maxRetries; attempt++ {
 		readRes := r.ReadWithStats(path)
 		if readRes.Err == nil {
-
+			if attempt > 0 {
+				metrics.RetryAttempts.WithLabelValues("success").Inc()
+			}
 			return readRes
 		}
 
 		lastErr = readRes.Err
+		metrics.RetryAttempts.WithLabelValues("failed").Inc()
 
 		if attempt < r.maxRetries {
 			delay := r.calcDelay(attempt)

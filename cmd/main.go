@@ -12,8 +12,10 @@ import (
 	"time"
 
 	"github.com/coddemn/TextAnalyzer/internal/domain"
+	"github.com/coddemn/TextAnalyzer/internal/metrics"
 	"github.com/coddemn/TextAnalyzer/internal/service/analyzer"
 	"github.com/coddemn/TextAnalyzer/internal/service/reader"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 func main() {
@@ -37,6 +39,7 @@ func main() {
 	retryDelay := 100 * time.Millisecond
 
 	// initialyze
+	metrics.Init()
 	r := reader.NewFileReader(maxRetries, retryDelay)
 	a := analyzer.New()
 
@@ -52,8 +55,12 @@ func main() {
 
 	for w := 0; w < workerCount; w++ {
 		wg.Add(1)
+		metrics.ActiveWorkers.Inc()
+
 		go func(workerID int) {
 			defer wg.Done()
+			defer metrics.ActiveWorkers.Dec()
+
 			for filePath := range jobs { // wait new jobs while chan is open
 				select {
 				case <-ctx.Done():
@@ -61,17 +68,16 @@ func main() {
 				default:
 				}
 
-				readRes := r.ReadWithRetry(filePath)
-				var res domain.AnalysisResult
-				res.FilePath = filePath
-				if readRes.Err != nil {
-					res.Err = fmt.Errorf("Worker %d: read error: %w", workerID, readRes.Err)
+				timer := prometheus.NewTimer(metrics.ProcessDuration)
+				res := processFile(r, a, filePath, topN, workerID)
+				timer.ObserveDuration()
 
-					results <- res
-					continue
+				if res.Err != nil {
+					metrics.FilesProcessed.WithLabelValues("error").Inc()
+				} else {
+					metrics.FilesProcessed.WithLabelValues("ok").Inc()
 				}
 
-				res = a.Run(filePath, readRes.Text, topN, readRes.LineCount)
 				results <- res
 			}
 		}(w)
@@ -135,4 +141,22 @@ func main() {
 	wg.Wait()
 	log.Println("All workers is completed. App correct stopped.")
 
+}
+
+func processFile(
+	r *reader.FileReader,
+	a *analyzer.Analyzer,
+	filePath string,
+	topN int,
+	workerID int,
+) domain.AnalysisResult {
+	res := r.ReadWithRetry(filePath)
+	if res.Err != nil {
+		return domain.AnalysisResult{
+			FilePath: filePath,
+			Err:      fmt.Errorf("Worker %d: %w", workerID, res.Err),
+		}
+	}
+
+	return a.Run(filePath, res.Text, topN, res.LineCount)
 }

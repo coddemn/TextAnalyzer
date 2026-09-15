@@ -2,20 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 	"time"
 
+	"github.com/coddemn/TextAnalyzer/internal/api/dto"
+	api "github.com/coddemn/TextAnalyzer/internal/api/handler"
 	"github.com/coddemn/TextAnalyzer/internal/domain"
 	"github.com/coddemn/TextAnalyzer/internal/metrics"
 	"github.com/coddemn/TextAnalyzer/internal/service/analyzer"
 	"github.com/coddemn/TextAnalyzer/internal/service/reader"
+	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func main() {
@@ -27,16 +31,17 @@ func main() {
 
 	// filePath := os.Args
 
-	files := []string{
-		"../example.txt",
-		"../ex2.txt",
-	}
+	// files := []string{
+	// 	"../example.txt",
+	// 	"../ex2.txt",
+	// }
 
 	// config
 	workerCount := 4
 	topN := 5
 	maxRetries := 3
 	retryDelay := 100 * time.Millisecond
+	httpAddr := ":8080"
 
 	// initialyze
 	metrics.Init()
@@ -44,8 +49,8 @@ func main() {
 	a := analyzer.New()
 
 	// channels
-	jobs := make(chan string, len(files))
-	results := make(chan domain.AnalysisResult, len(files))
+	jobs := make(chan dto.JobRequest, 100)
+	//results := make(chan domain.AnalysisResult, len(files))
 
 	// worker pool
 	ctx, cancel := context.WithCancel(context.Background())
@@ -61,7 +66,7 @@ func main() {
 			defer wg.Done()
 			defer metrics.ActiveWorkers.Dec()
 
-			for filePath := range jobs { // wait new jobs while chan is open
+			for job := range jobs { // wait new jobs while chan is open
 				select {
 				case <-ctx.Done():
 					return
@@ -69,7 +74,7 @@ func main() {
 				}
 
 				timer := prometheus.NewTimer(metrics.ProcessDuration)
-				res := processFile(r, a, filePath, topN, workerID)
+				res := processFile(r, a, job.FilePath, topN, workerID)
 				timer.ObserveDuration()
 
 				if res.Err != nil {
@@ -78,64 +83,95 @@ func main() {
 					metrics.FilesProcessed.WithLabelValues("ok").Inc()
 				}
 
-				results <- res
+				job.Result <- res
 			}
 		}(w)
 	}
 
-	for _, f := range files {
-		jobs <- f
-	}
-	close(jobs)
+	// for _, f := range files {
+	// 	jobs <- f
+	// }
+	// close(jobs)
 
-	var allResults []domain.AnalysisResult
-	for i := 0; i < len(files); i++ {
-		res := <-results
-		allResults = append(allResults, res)
+	// var allResults []domain.AnalysisResult
+	// for i := 0; i < len(files); i++ {
+	// 	res := <-results
+	// 	allResults = append(allResults, res)
+	// }
+
+	// for _, res := range allResults {
+	// 	if res.Err != nil {
+	// 		log.Printf("[%s] ERROR: %v\n", res.FilePath, res.Err)
+	// 		continue
+	// 	}
+
+	// 	// Для читаемого json с отступами
+	// 	dataIndent, err := json.MarshalIndent(res, "", " ")
+	// 	if err != nil {
+	// 		fmt.Println("Ошибка маршалинга:", err)
+	// 		return
+	// 	}
+	// 	fmt.Println(string(dataIndent))
+
+	// 	fmt.Println()
+
+	// 	// В консоль
+	// 	fmt.Printf("=== %s ===\n", res.FilePath)
+	// 	fmt.Printf("Строк: %d\n", res.Lines)
+	// 	fmt.Printf("Символов: %d\n", res.Symbols)
+	// 	fmt.Printf("Предложений: %d\n", res.Sentences)
+	// 	fmt.Printf("Слов: %d\n", res.WordCount)
+	// 	fmt.Printf("Средняя длина слова: %.2f\n", res.AvgWordLength)
+	// 	fmt.Printf("Самое длинное слово: %s - %d\n", res.LongestWord.Text, res.LongestWord.Length)
+	// 	fmt.Println("Топ частых слов:")
+	// 	for _, w := range res.TopFrequents {
+	// 		fmt.Printf("  %s: %d\n", w.Text, w.Quantity)
+	// 	}
+	// 	fmt.Println()
+	// 	fmt.Println()
+
+	// }
+
+	gin.SetMode(gin.ReleaseMode)
+	router := gin.New()
+	router.Use(gin.Recovery())
+
+	handler := api.NewHandler(jobs, topN)
+	router.POST("/analyze", handler.AnalyzeFile)
+	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "It`s API from Gin, Demidos!",
+		})
+	})
+
+	httpServer := &http.Server{
+		Addr:    httpAddr,
+		Handler: router,
 	}
 
-	for _, res := range allResults {
-		if res.Err != nil {
-			log.Printf("[%s] ERROR: %v\n", res.FilePath, res.Err)
-			continue
+	go func() {
+		log.Printf("HTTP server on %s", httpAddr)
+		if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("HTTP server error: %v", err)
 		}
 
-		// Для читаемого json с отступами
-		dataIndent, err := json.MarshalIndent(res, "", " ")
-		if err != nil {
-			fmt.Println("Ошибка маршалинга:", err)
-			return
-		}
-		fmt.Println(string(dataIndent))
-
-		fmt.Println()
-
-		// В консоль
-		fmt.Printf("=== %s ===\n", res.FilePath)
-		fmt.Printf("Строк: %d\n", res.Lines)
-		fmt.Printf("Символов: %d\n", res.Symbols)
-		fmt.Printf("Предложений: %d\n", res.Sentences)
-		fmt.Printf("Слов: %d\n", res.WordCount)
-		fmt.Printf("Средняя длина слова: %.2f\n", res.AvgWordLength)
-		fmt.Printf("Самое длинное слово: %s - %d\n", res.LongestWord.Text, res.LongestWord.Length)
-		fmt.Println("Топ частых слов:")
-		for _, w := range res.TopFrequents {
-			fmt.Printf("  %s: %d\n", w.Text, w.Quantity)
-		}
-		fmt.Println()
-		fmt.Println()
-
-	}
+	}()
 
 	// Graceful shutdown (ctrl+c)
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	sig := <-sigChan
+	log.Printf("Given signal %v. Stopping work...\n", sig)
 
-	go func() {
-		<-sigChan
-		log.Println("Given shutdown signal. Stopping pool...")
-		cancel()
-	}()
+	shtdCtx, shtdCancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer shtdCancel()
+
+	if err := httpServer.Shutdown(shtdCtx); err != nil {
+		log.Printf("HTTP shutdown error: %v", err)
+	}
+
+	close(jobs)
 
 	// wait workers is finalized
 	wg.Wait()

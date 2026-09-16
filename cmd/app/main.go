@@ -13,6 +13,10 @@ import (
 
 	"github.com/joho/godotenv"
 
+	_ "github.com/coddemn/TextAnalyzer/docs"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
+
 	"github.com/coddemn/TextAnalyzer/internal/api/dto"
 	api "github.com/coddemn/TextAnalyzer/internal/api/handler"
 	"github.com/coddemn/TextAnalyzer/internal/config"
@@ -22,9 +26,19 @@ import (
 	"github.com/coddemn/TextAnalyzer/internal/service/reader"
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
+// @title Text Analyzer API
+// @version 1.0.0
+// @description API для анализа текста и загрузки файлов.
+// @termsOfService http://swagger.io/terms/
+// @contact.name API Support
+// @contact.email support@example.com
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+// @host localhost:8080
+// @basePath /
+// @schemes http
 func main() {
 
 	_ = godotenv.Load(".env")
@@ -156,7 +170,7 @@ func main() {
 	router.POST("/analyze/upload", handler.AnalyzeUploadFile)
 	router.POST("/analyze/multiple", handler.AnalyzeMultipleFiles)
 
-	router.GET("/metrics", gin.WrapH(promhttp.Handler()))
+	router.GET("/metrics", handler.Metrics)
 
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
@@ -164,9 +178,8 @@ func main() {
 		})
 	})
 
-	router.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
-	})
+	router.GET("/health", handler.Health)
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	httpServer := &http.Server{
 		Addr:    httpAddr,

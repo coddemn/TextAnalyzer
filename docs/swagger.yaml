@@ -1,0 +1,147 @@
+basePath: /
+definitions:
+  domain.AnalysisResult:
+    properties:
+      avg-word-len:
+        type: number
+      err: {}
+      file-path:
+        type: string
+      lines:
+        type: integer
+      longest-word:
+        $ref: '#/definitions/domain.Word'
+      sentences:
+        type: integer
+      symbols:
+        type: integer
+      top-frequents:
+        items:
+          $ref: '#/definitions/domain.Word'
+        type: array
+      words:
+        type: integer
+    type: object
+  domain.Word:
+    properties:
+      length:
+        type: integer
+      quantity:
+        type: integer
+      text:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@example.com
+    name: API Support
+  description: API для анализа текста и загрузки файлов.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Text Analyzer API
+  version: 1.0.0
+paths:
+  /analyze/multiple:
+    post:
+      consumes:
+      - multipart/form-data
+      description: 'Принимает несколько файлов в multipart/form-data, обрабатывает
+        параллельно, возвращает массив результатов. Лимит: 10 файлов.'
+      parameters:
+      - description: Файлы для анализа (до 10 штук)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Массив результатов анализа
+          schema:
+            items:
+              $ref: '#/definitions/domain.AnalysisResult'
+            type: array
+        "400":
+          description: Ошибка валидации (нет файлов или превышен лимит)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Загрузить и проанализировать несколько файлов
+      tags:
+      - analysis
+  /analyze/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Принимает multipart/form-data с файлом, отправляет в воркер-пул,
+        возвращает результат анализа.
+      parameters:
+      - description: Файл для анализа (поддерживаются .txt, .md)
+        in: formData
+        name: file
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Результат анализа файла
+          schema:
+            $ref: '#/definitions/domain.AnalysisResult'
+        "400":
+          description: Ошибка валидации (нет файла)
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Загрузить и проанализировать один файл
+      tags:
+      - analysis
+  /health:
+    get:
+      description: Возвращает статус OK, если сервис готов принимать запросы.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Статус сервиса
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Проверка работоспособности сервиса
+      tags:
+      - health
+  /metrics:
+    get:
+      description: Raw metrics in Prometheus text format.
+      produces:
+      - text/plain
+      responses:
+        "200":
+          description: Prometheus plain text
+        "500":
+          description: Metrics collection error
+      summary: Prometheus metrics endpoint
+      tags:
+      - monitoring
+schemes:
+- http
+swagger: "2.0"

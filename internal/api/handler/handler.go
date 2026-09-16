@@ -12,6 +12,7 @@ import (
 	"github.com/coddemn/TextAnalyzer/internal/api/dto"
 	"github.com/coddemn/TextAnalyzer/internal/domain"
 	"github.com/gin-gonic/gin"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 type Handler struct {
@@ -28,6 +29,17 @@ func NewHandler(jobs chan dto.JobRequest, topN int, maxFiles int) *Handler {
 	}
 }
 
+// AnalyzeUploadFile godoc
+// @Summary Загрузить и проанализировать один файл
+// @Description Принимает multipart/form-data с файлом, отправляет в воркер-пул, возвращает результат анализа.
+// @Tags analysis
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Файл для анализа (поддерживаются .txt, .md)"
+// @Success 200 {object} domain.AnalysisResult "Результат анализа файла"
+// @Failure 400 {object} map[string]string "Ошибка валидации (нет файла)"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /analyze/upload [post]
 func (h *Handler) AnalyzeUploadFile(c *gin.Context) {
 	file, err := c.FormFile("file")
 	if err != nil {
@@ -45,6 +57,17 @@ func (h *Handler) AnalyzeUploadFile(c *gin.Context) {
 	c.IndentedJSON(http.StatusOK, res)
 }
 
+// AnalyzeMultipleFiles godoc
+// @Summary Загрузить и проанализировать несколько файлов
+// @Description Принимает несколько файлов в multipart/form-data, обрабатывает параллельно, возвращает массив результатов. Лимит: 10 файлов.
+// @Tags analysis
+// @Accept multipart/form-data
+// @Produce json
+// @Param file formData file true "Файлы для анализа (до 10 штук)"
+// @Success 200 {array} domain.AnalysisResult "Массив результатов анализа"
+// @Failure 400 {object} map[string]string "Ошибка валидации (нет файлов или превышен лимит)"
+// @Failure 500 {object} map[string]string "Внутренняя ошибка сервера"
+// @Router /analyze/multiple [post]
 func (h *Handler) AnalyzeMultipleFiles(c *gin.Context) {
 	form, err := c.MultipartForm()
 	if err != nil || form == nil {
@@ -152,4 +175,28 @@ func (h *Handler) processSingleFile(f *multipart.FileHeader) domain.AnalysisResu
 
 	res.FilePath = f.Filename // нормализуем имя в ответе
 	return res
+}
+
+// Health godoc
+// @Summary Проверка работоспособности сервиса
+// @Description Возвращает статус OK, если сервис готов принимать запросы.
+// @Tags health
+// @Produce json
+// @Success 200 {object} map[string]string "Статус сервиса"
+// @Router /health [get]
+func (h *Handler) Health(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"status": "ok"})
+}
+
+// Metrics godoc
+// @Summary Prometheus metrics endpoint
+// @Description Raw metrics in Prometheus text format.
+// @Tags monitoring
+// @Produce text/plain
+// @Success 200 "Prometheus plain text"
+// @Failure 500 "Metrics collection error"
+// @Router /metrics [get]
+func (h *Handler) Metrics(c *gin.Context) {
+	// promhttp.Handler() возвращает http.Handler, а gin.WrapH превращает его в gin.HandlerFunc
+	gin.WrapH(promhttp.Handler())(c)
 }

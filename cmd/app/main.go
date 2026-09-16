@@ -27,9 +27,13 @@ import (
 
 func main() {
 
-	_ = godotenv.Load("../.env")
+	_ = godotenv.Load(".env")
 
-	cfg, err := config.Load("../configs/config.yaml")
+	configPath := os.Getenv("CONFIG_PATH")
+	if configPath == "" {
+		configPath = "configs/config.yaml" // default
+	}
+	cfg, err := config.Load(configPath)
 	if err != nil {
 		log.Fatalf("load config: %v", err)
 	}
@@ -158,6 +162,10 @@ func main() {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "It`s API from Gin, Demidos!",
 		})
+	})
+
+	router.GET("/health", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
 
 	httpServer := &http.Server{

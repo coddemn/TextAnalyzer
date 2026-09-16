@@ -1,0 +1,23 @@
+services:
+  analyzer:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env
+    environment:
+      # Можно переопределить или добавить переменные прямо тут
+      - GIN_MODE=release
+    restart: unless-stopped
+    volumes:
+      - ./configs:/app/configs:ro
+      # Если хочешь, чтобы контейнер видел локальные файлы для /analyze?file=...
+      # - ./data:/data:ro
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s

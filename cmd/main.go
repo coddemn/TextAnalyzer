@@ -11,8 +11,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/joho/godotenv"
+
 	"github.com/coddemn/TextAnalyzer/internal/api/dto"
 	api "github.com/coddemn/TextAnalyzer/internal/api/handler"
+	"github.com/coddemn/TextAnalyzer/internal/config"
 	"github.com/coddemn/TextAnalyzer/internal/domain"
 	"github.com/coddemn/TextAnalyzer/internal/metrics"
 	"github.com/coddemn/TextAnalyzer/internal/service/analyzer"
@@ -23,6 +26,13 @@ import (
 )
 
 func main() {
+
+	_ = godotenv.Load("../.env")
+
+	cfg, err := config.Load("../configs/config.yaml")
+	if err != nil {
+		log.Fatalf("load config: %v", err)
+	}
 
 	// if len(os.Args) < 2 {
 	// 	fmt.Fprintln(os.Stderr, "Ошибка: Не указано имя текстового файла")
@@ -37,12 +47,12 @@ func main() {
 	// }
 
 	// config
-	workerCount := 4
-	topN := 5
-	maxFiles := 10
-	maxRetries := 3
-	retryDelay := 100 * time.Millisecond
-	httpAddr := ":8080"
+	workerCount := cfg.App.WorkerCount
+	topN := cfg.App.TopN
+	maxFiles := cfg.App.MaxFiles
+	maxRetries := cfg.App.MaxRetries
+	retryDelay := time.Duration(cfg.App.RetryDelay) * time.Millisecond
+	httpAddr := fmt.Sprintf("%s:%s", cfg.Server.Host, cfg.Server.Port)
 
 	// initialyze
 	metrics.Init()

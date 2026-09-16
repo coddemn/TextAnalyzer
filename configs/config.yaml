@@ -1,0 +1,10 @@
+server:
+  host: ""
+  port: ""
+
+app:
+  workers: 4
+  top_n: 5
+  max_files: 10
+  max_retries: 3
+  retry_delay: 100

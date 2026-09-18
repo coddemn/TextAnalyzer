@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="style.css">
+	<title>Лизер?</title>
+</head>
+<body>
+	<center>
+        <h1>Здесь аналят тексты!</h1>
+
+        <!-- Блок загрузки файлов -->
+        <div class="Frame1" id="uploadFrame">
+            <p>Файл кидай сюда</p>
+            
+            <!-- Контейнер для динамических полей ввода -->
+            <div id="fileInputsContainer">
+                <!-- Сюда JS будет добавлять поля -->
+            </div>
+
+            <!-- Кнопка добавления нового поля -->
+            <button type="button" class="button" id="addFileBtn">+ файл</button>
+        </div>
+
+        <!-- Кнопка запуска -->
+        <button type="button" class="button" id="startAnalysisBtn">Смотрим</button>
+
+        <!-- Блок состояния загрузки (появляется вместо кнопки) -->
+        <div class="loading-state" id="loadingState" style="display: none;">
+            <p>Анализ...</p>
+            <!-- Можно вставить сюда GIF или спиннер -->
+            <div class="spinner">
+
+			</div>
+        </div>
+
+        <!-- Блок результатов (изначально скрыт) -->
+        <div class="Frame2" id="resultsContainer">
+
+		</div>
+
+		<button type="button" class="button" id="resetBtn" style="display: none; margin-top: 20px;">Еще раз</button>
+	</center>
+    
+    <script src="script.js"></script>
+</body>
+</html>

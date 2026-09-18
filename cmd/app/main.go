@@ -34,8 +34,6 @@ import (
 // @termsOfService http://swagger.io/terms/
 // @contact.name API Support
 // @contact.email support@example.com
-// @license.name MIT
-// @license.url https://opensource.org/licenses/MIT
 // @host localhost:8080
 // @basePath /
 // @schemes http
@@ -117,55 +115,23 @@ func main() {
 		}(w)
 	}
 
-	// for _, f := range files {
-	// 	jobs <- f
-	// }
-	// close(jobs)
-
-	// var allResults []domain.AnalysisResult
-	// for i := 0; i < len(files); i++ {
-	// 	res := <-results
-	// 	allResults = append(allResults, res)
-	// }
-
-	// for _, res := range allResults {
-	// 	if res.Err != nil {
-	// 		log.Printf("[%s] ERROR: %v\n", res.FilePath, res.Err)
-	// 		continue
-	// 	}
-
-	// 	// Для читаемого json с отступами
-	// 	dataIndent, err := json.MarshalIndent(res, "", " ")
-	// 	if err != nil {
-	// 		fmt.Println("Ошибка маршалинга:", err)
-	// 		return
-	// 	}
-	// 	fmt.Println(string(dataIndent))
-
-	// 	fmt.Println()
-
-	// 	// В консоль
-	// 	fmt.Printf("=== %s ===\n", res.FilePath)
-	// 	fmt.Printf("Строк: %d\n", res.Lines)
-	// 	fmt.Printf("Символов: %d\n", res.Symbols)
-	// 	fmt.Printf("Предложений: %d\n", res.Sentences)
-	// 	fmt.Printf("Слов: %d\n", res.WordCount)
-	// 	fmt.Printf("Средняя длина слова: %.2f\n", res.AvgWordLength)
-	// 	fmt.Printf("Самое длинное слово: %s - %d\n", res.LongestWord.Text, res.LongestWord.Length)
-	// 	fmt.Println("Топ частых слов:")
-	// 	for _, w := range res.TopFrequents {
-	// 		fmt.Printf("  %s: %d\n", w.Text, w.Quantity)
-	// 	}
-	// 	fmt.Println()
-	// 	fmt.Println()
-
-	// }
-
 	//gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	//router.Use(gin.Recovery())
 
 	handler := api.NewHandler(jobs, topN, maxFiles)
+
+	router.Use(func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Origin", "*")
+		c.Header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Content-Type")
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+		c.Next()
+	})
+
 	router.POST("/analyze", handler.AnalyzeFile)
 	router.POST("/analyze/upload", handler.AnalyzeUploadFile)
 	router.POST("/analyze/multiple", handler.AnalyzeMultipleFiles)

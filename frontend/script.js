@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 '<strong>Символов:</strong> ' + res['symbols'] + '<br>' +
                 '<strong>Предложений:</strong> ' + res['sentences'] + '<br>' +
                 '<strong>Слов:</strong> ' + res['words'] + '<br>' +
-                '<strong>Средняя длина слова:</strong> ' + res['avg-word-len'] + '<br>' +
+                '<strong>Средняя длина слова:</strong> ' + (res['avg-word-len'] ? res['avg-word-len'].toFixed(2) : '—') + '<br>' +
                 '<strong>Самое длинное слово:</strong> ' +
                 (res['longest-word'] ? res['longest-word'].Text + ' — ' + res['longest-word'].Length : '—') + '<br>' +
                 '<strong>Топ частых слов:</strong><br>' +
@@ -317,7 +317,17 @@ document.addEventListener('DOMContentLoaded', function () {
             // Имя файла: берём file-path, убираем путь, оставляем только имя
             var shortName = res['file-path'].split('/').pop().split('\\').pop();
             downloadBtn.addEventListener('click', function () {
+                const originalText = downloadBtn.textContent;
+
+                downloadBtn.disabled = true;
+                downloadBtn.textContent = "Сохраняем... ⏳";
+
                 downloadTextFile(textContent, shortName + '_analysis.txt');
+                
+                setTimeout(() => {
+                    downloadBtn.disabled = false;
+                    downloadBtn.textContent = originalText;
+                }, 1500);
             });
 
             resultDiv.appendChild(infoDiv);

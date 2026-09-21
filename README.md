@@ -151,6 +151,69 @@ TextAnalyzer/
 
 Логика загрузки конфигурации инкапсулирована в пакете `internal/config`.
 
+## 🧪 Примеры запросов к API
+
+Основной эндпоинт для анализа — `POST /analyze/multiple`. Он принимает несколько файлов `.txt` в формате `multipart/form-data`.
+
+> **Windows / PowerShell:** В PowerShell `curl` — это алиас на `Invoke-WebRequest`, а не настоящая утилита. Используйте `curl.exe` (с точкой) и обратный апостроф `` ` `` для переноса строк.
+
+### Анализ файлов
+
+**Bash (Linux / macOS / Git Bash):**
+```bash
+# Отправка одного файла, вывод ответа в терминал
+curl -X POST http://localhost:8080/analyze/multiple \
+  -F "files=@sample.txt"
+
+# Отправка двух файлов, сохранение ответа в report.json
+curl -X POST http://localhost:8080/analyze/multiple \
+  -F "files=@file1.txt" \
+  -F "files=@file2.txt" \
+  -o report.json
+````
+
+**PowerShell (Windows):**
+
+```powershell
+# Отправка одного файла, вывод ответа в терминал
+curl.exe -X POST http://localhost:8080/analyze/multiple `
+  -F "files=@sample.txt"
+
+# Отправка двух файлов, сохранение ответа в report.json
+curl.exe -X POST http://localhost:8080/analyze/multiple `
+  -F "files=@file1.txt" `
+  -F "files=@file2.txt" `
+  -o report.json
+```
+
+### Health Check
+
+```bash
+# Bash
+curl http://localhost:8080/health
+```
+
+```powershell
+# PowerShell
+curl.exe http://localhost:8080/health
+```
+
+### Просмотр метрик Prometheus
+
+Чтобы отфильтровать только метрики приложения (с префиксом `analyzer_`):
+
+```bash
+# Bash
+curl -s http://localhost:8080/metrics | grep "analyzer_"
+```
+
+```powershell
+# PowerShell
+curl.exe -s http://localhost:8080/metrics | Select-String "analyzer_"
+```
+
+> **Документация Swagger UI** доступна по адресу `http://localhost:8080/swagger/index.html` — там можно протестировать эндпоинт `/analyze/multiple` прямо в браузере, выбрав файлы через интерфейс.
+
 ## 🗺️ Диаграмма потока данных
 
 Схема демонстрирует полный путь запроса: от фронтенда через Nginx-прокси до воркер-пула бэкенда, включая механизмы отказоустойчивости и мониторинга.

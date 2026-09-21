@@ -159,7 +159,6 @@ TextAnalyzer/
 
 ```mermaid
 flowchart TD
-    %% Стилизация узлов
     classDef frontend fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
     classDef nginx fill:#ffebee,stroke:#c62828,stroke-width:2px;
     classDef api fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
@@ -168,33 +167,30 @@ flowchart TD
     classDef metrics fill:#fff8e1,stroke:#fbc02d,stroke-width:2px;
     classDef output fill:#eceff1,stroke:#546e7a,stroke-width:2px;
 
-    %% Узлы
-    User[("Пользователь\n(Frontend: localhost/)")];
-    Nginx[("Nginx Reverse Proxy\n(nginx.conf)\n/api/* -> backend:8080")];
-    BackendAPI[("Backend API Handler\n(handler.go)\n/analyze/multiple")];
-    DTO[("Валидация DTO\n(dto/requests.go)\n+ изоляция канала результата")];
-    Reader[("Чтение файла\n(reader.go)\n+ retry с экспоненциальной задержкой")];
-    Analyzer[("Анализ текста\n(analyzer/text.go, words.go)")];
-    Pool[(Worker Pool\n(main.go)\nпараллельная обработка задач)];
-    Prometheus[("Сбор метрик\n(metrics.go)\nCounter, Histogram, Gauge")];
-    Response[("Формирование JSON-ответа\nвозврат клиенту")];
+    User["Пользователь\nFrontend: localhost/"];
+    Nginx["Nginx Reverse Proxy\nnginx.conf\n/api/* → backend:8080"];
+    BackendAPI["Backend API Handler\nhandler.go\n/analyze/multiple"];
+    DTO["Валидация DTO\ndto/requests.go\n+ изоляция канала результата"];
+    Reader["Чтение файла\nreader.go\n+ retry с экспоненциальной задержкой"];
+    Analyzer["Анализ текста\nanalyzer/text.go, words.go"];
+    Pool["Worker Pool\nmain.go\nпараллельная обработка задач"];
+    Prometheus["Сбор метрик\nmetrics.go\nCounter, Histogram, Gauge"];
+    Response["Формирование JSON-ответа\nвозврат клиенту"];
 
-    %% Связи
-    User -->|POST /api/analyze/multiple\n(form-data .txt)| Nginx;
-    Nginx -->|проксирование на backend:8080| BackendAPI;
+    User -->|"POST /api/analyze/multiple\nform-data .txt"| Nginx;
+    Nginx -->|"проксирование на backend:8080"| BackendAPI;
     BackendAPI --> DTO;
-    DTO -->|передача задачи в пул| Pool;
+    DTO -->|"передача задачи в пул"| Pool;
     Pool --> Reader;
-    Reader -->|успех| Analyzer;
-    Reader -->|ошибка → retry (exp backoff)| Reader;
-    Reader -->|критическая ошибка| Response;
+    Reader -->|"успех"| Analyzer;
+    Reader -->|"ошибка → retry"| Reader;
+    Reader -->|"критическая ошибка"| Response;
     Analyzer --> Prometheus;
     Analyzer --> Response;
-    Prometheus -.->|экспорт метрик| Response;
-    Response -->|JSON ответ| Nginx;
-    Nginx -->|возврат ответа| User;
+    Prometheus -.->|"экспорт метрик"| Response;
+    Response -->|"JSON ответ"| Nginx;
+    Nginx -->|"возврат ответа"| User;
 
-    %% Применение стилей
     class User frontend;
     class Nginx nginx;
     class BackendAPI,DTO api;

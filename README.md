@@ -202,6 +202,7 @@ flowchart TD
     class Pool worker;
     class Prometheus metrics;
     class Response output;
+```
 
 ## 🤝 Вклад в проект
 

@@ -219,7 +219,9 @@ curl -s http://localhost:8080/metrics | grep "analyzer_"
 curl.exe -s http://localhost:8080/metrics | Select-String "analyzer_"
 ```
 
-### Документация Swagger UI 
+---
+
+## 🔗 Документация Swagger UI 
 Доступна по адресу `http://localhost:8080/swagger/index.html` — там можно протестировать эндпоинт `/analyze/multiple` прямо в браузере, выбрав файлы через интерфейс.
 
 ---

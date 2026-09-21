@@ -143,6 +143,7 @@ TextAnalyzer/
 
 `docker-compose.yml` объединяет сервисы `backend`, `frontend` и `nginx` в единую сеть. Nginx выступает в роли reverse proxy, перенаправляя запросы к соответствующим сервисам.
 
+
 ## 📄 Конфигурация
 
 Настройки приложения хранятся в двух местах:
@@ -151,11 +152,15 @@ TextAnalyzer/
 
 Логика загрузки конфигурации инкапсулирована в пакете `internal/config`.
 
+---
+
 ## 🧪 Примеры запросов к API
 
 Основной эндпоинт для анализа — `POST /analyze/multiple`. Он принимает несколько файлов `.txt` в формате `multipart/form-data`.
 
+
 > **Windows / PowerShell:** В PowerShell `curl` — это алиас на `Invoke-WebRequest`, а не настоящая утилита. Используйте `curl.exe` (с точкой) и обратный апостроф `` ` `` для переноса строк.
+
 
 ### Анализ файлов
 
@@ -186,6 +191,7 @@ curl.exe -X POST http://localhost:8080/analyze/multiple `
   -o report.json
 ```
 
+
 ### Health Check
 
 ```bash
@@ -197,6 +203,7 @@ curl http://localhost:8080/health
 # PowerShell
 curl.exe http://localhost:8080/health
 ```
+
 
 ### Просмотр метрик Prometheus
 
@@ -212,7 +219,10 @@ curl -s http://localhost:8080/metrics | grep "analyzer_"
 curl.exe -s http://localhost:8080/metrics | Select-String "analyzer_"
 ```
 
+
 > **Документация Swagger UI** доступна по адресу `http://localhost:8080/swagger/index.html` — там можно протестировать эндпоинт `/analyze/multiple` прямо в браузере, выбрав файлы через интерфейс.
+
+---
 
 ## 🗺️ Диаграмма потока данных
 

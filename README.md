@@ -151,6 +151,58 @@ TextAnalyzer/
 
 Логика загрузки конфигурации инкапсулирована в пакете `internal/config`.
 
+## 🗺️ Диаграмма потока данных
+
+Схема демонстрирует полный путь запроса: от фронтенда через Nginx-прокси до воркер-пула бэкенда, включая механизмы отказоустойчивости и мониторинга.
+
+Архитектура приложения построена по принципу разделения ответственности. Фронтенд отправляет запросы на путь /api/.... Встроенный Nginx (настроенный в nginx.conf) выступает в роли Reverse Proxy: он перехватывает запросы с префиксом /api и прозрачно перенаправляет их на сервис бэкенда (backend:8080), скрывая внутреннюю структуру сети от клиента.
+
+```mermaid
+flowchart TD
+    %% Стилизация узлов
+    classDef frontend fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
+    classDef nginx fill:#ffebee,stroke:#c62828,stroke-width:2px;
+    classDef api fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
+    classDef logic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
+    classDef worker fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
+    classDef metrics fill:#fff8e1,stroke:#fbc02d,stroke-width:2px;
+    classDef output fill:#eceff1,stroke:#546e7a,stroke-width:2px;
+
+    %% Узлы
+    User[("Пользователь &#10; (Frontend: localhost/)")];
+    Nginx[("Nginx Reverse Proxy &#10; (nginx.conf) &#10; <b>Маршрутизация:</b> /api/* -> backend:8080")];
+    BackendAPI[("Backend API Handler &#10; (handler.go) &#10; Путь: /analyze/multiple")];
+    DTO[("Валидация DTO &#10; (dto/requests.go) &#10; + Изоляция канала результата")];
+    Reader[("Чтение файла &#10; (reader.go) &#10; + Retry с экспоненциальной задержкой")];
+    Analyzer[("Анализ текста &#10; (analyzer/text.go, words.go)")];
+    Pool[(Worker Pool &#10; (main.go) &#10; Параллельная обработка задач)"];
+    Prometheus[("Сбор метрик &#10; (metrics.go) &#10; Counter, Histogram, Gauge")];
+    Response[("Формирование JSON-ответа &#10; и возврат клиенту")];
+
+    %% Связи
+    User -->|POST /api/analyze/multiple &#10; (form-data .txt)| Nginx;
+    Nginx -->|Проксирование на backend:8080| BackendAPI;
+    BackendAPI --> DTO;
+    DTO -->|Передача задачи в пул| Pool;
+    Pool --> Reader;
+    Reader -->|Успех| Analyzer;
+    Reader -->|Ошибка -> Retry (exp backoff)| Reader;
+    Reader -->|Критическая ошибка| Response;
+    Analyzer --> Prometheus;
+    Analyzer --> Response;
+    Prometheus -.->|Экспорт метрик| Response;
+    Response -->|JSON ответ| Nginx;
+    Nginx -->|Возврат ответа| User;
+
+    %% Применение стилей
+    class User frontend;
+    class Nginx nginx;
+    class BackendAPI,DTO api;
+    class Reader,Analyzer logic;
+    class Pool worker;
+    class Prometheus metrics;
+    class Response output;
+
 ## 🤝 Вклад в проект
 
 Pull Request'ы приветствуются! Пожалуйста, следуйте стандартам именования и добавляйте тесты для нового функционала.

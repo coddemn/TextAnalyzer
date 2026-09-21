@@ -159,45 +159,50 @@ TextAnalyzer/
 
 ```mermaid
 flowchart TD
-    classDef frontend fill:#e1f5fe,stroke:#0277bd,stroke-width:2px;
-    classDef nginx fill:#ffebee,stroke:#c62828,stroke-width:2px;
-    classDef api fill:#fff3e0,stroke:#ef6c00,stroke-width:2px;
-    classDef logic fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px;
-    classDef worker fill:#f3e5f5,stroke:#7b1fa2,stroke-width:2px;
-    classDef metrics fill:#fff8e1,stroke:#fbc02d,stroke-width:2px;
-    classDef output fill:#eceff1,stroke:#546e7a,stroke-width:2px;
+    %% --- СТИЛИ (АДАПТИРОВАНО ПОД GITHUB) ---
+    %% GitHub плохо рендерит бледные цвета. Используем насыщенные, но чистые тона.
+    classDef frontend fill:#3b82f6,stroke:#1d4ed8,stroke-width:2px,color:#ffffff;
+    classDef nginx fill:#ef4444,stroke:#b91c1c,stroke-width:2px,color:#ffffff;
+    classDef api fill:#f59e0b,stroke:#d97706,stroke-width:2px,color:#000000;
+    classDef logic fill:#10b981,stroke:#059669,stroke-width:2px,color:#000000;
+    classDef worker fill:#6366f1,stroke:#4f46e5,stroke-width:2px,color:#ffffff;
+    classDef metrics fill:#8b5cf6,stroke:#6d28d9,stroke-width:2px,color:#ffffff;
+    classDef output fill:#6b7280,stroke:#374151,stroke-width:2px,color:#ffffff;
 
-    User["Пользователь\nFrontend: localhost/"];
-    Nginx["Nginx Reverse Proxy\nnginx.conf\n/api/* → backend:8080"];
-    BackendAPI["Backend API Handler\nhandler.go\n/analyze/multiple"];
-    DTO["Валидация DTO\ndto/requests.go\n+ изоляция канала результата"];
-    Reader["Чтение файла\nreader.go\n+ retry с экспоненциальной задержкой"];
-    Analyzer["Анализ текста\nanalyzer/text.go, words.go"];
-    Pool["Worker Pool\nmain.go\nпараллельная обработка задач"];
-    Prometheus["Сбор метрик\nmetrics.go\nCounter, Histogram, Gauge"];
-    Response["Формирование JSON-ответа\nвозврат клиенту"];
+    %% --- УЗЛЫ ---
+    User["Пользователь\nFrontend: localhost/"]
+    Nginx["Nginx Reverse Proxy\nnginx.conf\n/api/* → backend:8080"]
+    BackendAPI["Backend API Handler\nhandler.go\n/analyze/multiple"]
+    DTO["Валидация DTO\ndto/requests.go\n+ изоляция канала результата"]
+    Reader["Чтение файла\nreader.go\n+ retry (exp backoff)"]
+    Analyzer["Анализ текста\nanalyzer/text.go, words.go"]
+    Pool["Worker Pool\nmain.go\nпараллельная обработка"]
+    Prometheus["Сбор метрик\nmetrics.go\nCounter, Histogram"]
+    Response["Формирование JSON\nвозврат клиенту"]
 
-    User -->|"POST /api/analyze/multiple\nform-data .txt"| Nginx;
-    Nginx -->|"проксирование на backend:8080"| BackendAPI;
-    BackendAPI --> DTO;
-    DTO -->|"передача задачи в пул"| Pool;
-    Pool --> Reader;
-    Reader -->|"успех"| Analyzer;
-    Reader -->|"ошибка → retry"| Reader;
-    Reader -->|"критическая ошибка"| Response;
-    Analyzer --> Prometheus;
-    Analyzer --> Response;
-    Prometheus -.->|"экспорт метрик"| Response;
-    Response -->|"JSON ответ"| Nginx;
-    Nginx -->|"возврат ответа"| User;
+    %% --- СВЯЗИ ---
+    User -->|"POST /api/analyze/multiple\nform-data .txt"| Nginx
+    Nginx -->|"проксирование на backend:8080"| BackendAPI
+    BackendAPI --> DTO
+    DTO -->|"передача задачи в пул"| Pool
+    Pool --> Reader
+    Reader -->|"успех"| Analyzer
+    Reader -->|"ошибка → retry"| Reader
+    Reader -->|"критическая ошибка"| Response
+    Analyzer --> Prometheus
+    Analyzer --> Response
+    Prometheus -.->|"экспорт метрик"| Response
+    Response -->|"JSON ответ"| Nginx
+    Nginx -->|"возврат ответа"| User
 
-    class User frontend;
-    class Nginx nginx;
-    class BackendAPI,DTO api;
-    class Reader,Analyzer logic;
-    class Pool worker;
-    class Prometheus metrics;
-    class Response output;
+    %% --- ПРИМЕНЕНИЕ СТИЛЕЙ ---
+    class User frontend
+    class Nginx nginx
+    class BackendAPI,DTO api
+    class Reader,Analyzer logic
+    class Pool worker
+    class Prometheus metrics
+    class Response output
 ```
 
 ## 🤝 Вклад в проект

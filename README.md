@@ -169,30 +169,30 @@ flowchart TD
     classDef output fill:#eceff1,stroke:#546e7a,stroke-width:2px;
 
     %% Узлы
-    User[("Пользователь &#10; (Frontend: localhost/)")];
-    Nginx[("Nginx Reverse Proxy &#10; (nginx.conf) &#10; <b>Маршрутизация:</b> /api/* -> backend:8080")];
-    BackendAPI[("Backend API Handler &#10; (handler.go) &#10; Путь: /analyze/multiple")];
-    DTO[("Валидация DTO &#10; (dto/requests.go) &#10; + Изоляция канала результата")];
-    Reader[("Чтение файла &#10; (reader.go) &#10; + Retry с экспоненциальной задержкой")];
-    Analyzer[("Анализ текста &#10; (analyzer/text.go, words.go)")];
-    Pool[(Worker Pool &#10; (main.go) &#10; Параллельная обработка задач)"];
-    Prometheus[("Сбор метрик &#10; (metrics.go) &#10; Counter, Histogram, Gauge")];
-    Response[("Формирование JSON-ответа &#10; и возврат клиенту")];
+    User[("Пользователь\n(Frontend: localhost/)")];
+    Nginx[("Nginx Reverse Proxy\n(nginx.conf)\n/api/* -> backend:8080")];
+    BackendAPI[("Backend API Handler\n(handler.go)\n/analyze/multiple")];
+    DTO[("Валидация DTO\n(dto/requests.go)\n+ изоляция канала результата")];
+    Reader[("Чтение файла\n(reader.go)\n+ retry с экспоненциальной задержкой")];
+    Analyzer[("Анализ текста\n(analyzer/text.go, words.go)")];
+    Pool[(Worker Pool\n(main.go)\nпараллельная обработка задач)];
+    Prometheus[("Сбор метрик\n(metrics.go)\nCounter, Histogram, Gauge")];
+    Response[("Формирование JSON-ответа\nвозврат клиенту")];
 
     %% Связи
-    User -->|POST /api/analyze/multiple &#10; (form-data .txt)| Nginx;
-    Nginx -->|Проксирование на backend:8080| BackendAPI;
+    User -->|POST /api/analyze/multiple\n(form-data .txt)| Nginx;
+    Nginx -->|проксирование на backend:8080| BackendAPI;
     BackendAPI --> DTO;
-    DTO -->|Передача задачи в пул| Pool;
+    DTO -->|передача задачи в пул| Pool;
     Pool --> Reader;
-    Reader -->|Успех| Analyzer;
-    Reader -->|Ошибка -> Retry (exp backoff)| Reader;
-    Reader -->|Критическая ошибка| Response;
+    Reader -->|успех| Analyzer;
+    Reader -->|ошибка → retry (exp backoff)| Reader;
+    Reader -->|критическая ошибка| Response;
     Analyzer --> Prometheus;
     Analyzer --> Response;
-    Prometheus -.->|Экспорт метрик| Response;
+    Prometheus -.->|экспорт метрик| Response;
     Response -->|JSON ответ| Nginx;
-    Nginx -->|Возврат ответа| User;
+    Nginx -->|возврат ответа| User;
 
     %% Применение стилей
     class User frontend;

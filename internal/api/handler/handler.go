@@ -107,7 +107,7 @@ func (h *Handler) AnalyzeMultipleFiles(c *gin.Context) {
 
 	wg.Wait()
 
-	c.JSON(http.StatusOK, results)
+	c.IndentedJSON(http.StatusOK, results)
 }
 
 // AnalyzeFile — POST /analyze?file=path

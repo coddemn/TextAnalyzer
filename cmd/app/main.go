@@ -50,18 +50,6 @@ func main() {
 		log.Fatalf("load config: %v", err)
 	}
 
-	// if len(os.Args) < 2 {
-	// 	fmt.Fprintln(os.Stderr, "Ошибка: Не указано имя текстового файла")
-	// 	os.Exit(1)
-	// }
-
-	// filePath := os.Args
-
-	// files := []string{
-	// 	"../example.txt",
-	// 	"../ex2.txt",
-	// }
-
 	// config
 	workerCount := cfg.App.WorkerCount
 	topN := cfg.App.TopN

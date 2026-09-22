@@ -18,15 +18,27 @@ type FileReadResult struct {
 	Err       error
 }
 
+type fileReaderFunc func(path string) (*os.File, error)
+
 type FileReader struct {
 	maxRetries int
 	baseDelay  time.Duration
+	readFunc   func(path string) (*os.File, error)
 }
 
 func NewFileReader(maxRetries int, baseDelay time.Duration) *FileReader {
 	return &FileReader{
 		maxRetries: maxRetries,
 		baseDelay:  baseDelay,
+		readFunc:   os.Open,
+	}
+}
+
+func NewReaderForTests(maxRetries int, baseDelay time.Duration, readFunc fileReaderFunc) *FileReader {
+	return &FileReader{
+		maxRetries: maxRetries,
+		baseDelay:  baseDelay,
+		readFunc:   readFunc,
 	}
 }
 
@@ -56,7 +68,7 @@ func (r *FileReader) ReadWithRetry(path string) FileReadResult {
 
 func (r *FileReader) ReadWithStats(path string) FileReadResult {
 
-	file, err := os.Open(path)
+	file, err := r.readFunc(path)
 
 	if err != nil {
 		log.Printf("Error opening file: %v\n", err)
@@ -77,7 +89,7 @@ func (r *FileReader) ReadWithStats(path string) FileReadResult {
 	}
 
 	if err := scanner.Err(); err != nil {
-		log.Fatalf("Error scan: %v\n", err)
+		log.Printf("Error scan: %v\n", err)
 		return FileReadResult{Err: err}
 	}
 
